@@ -108,6 +108,43 @@
       display: none;
     }
 
+    .resultado {
+      background-color: #fef2f2;
+      padding: 1.5rem;
+      border-radius: 8px;
+      text-align: center;
+      border: 2px solid #f87171;
+      margin-top: 2rem;
+    }
+
+    .resultado p {
+      font-size: 1.25rem;
+    }
+
+    .resultado .mensaje {
+      font-weight: bold;
+      font-size: 1.5rem;
+      color: #ef4444;
+    }
+
+    #reiniciarBtn {
+      margin-top: 1.5rem;
+      width: 100%;
+      padding: 1rem;
+      font-size: 1.2rem;
+      background-color: #34d399;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      transition: background 0.3s ease;
+    }
+
+    #reiniciarBtn:hover {
+      background-color: #10b981;
+    }
+
     /* Responsive */
     @media (max-width: 480px) {
       body {
@@ -139,7 +176,12 @@
     <div class="opciones" id="opciones"></div>
     <div class="barra" id="barra"></div>
     <button id="siguienteBtn" class="oculto">Siguiente pregunta ➡️</button>
-    <div id="resultado" class="oculto"></div>
+    <div id="resultado" class="oculto resultado">
+      <p>Has completado el quiz.</p>
+      <p class="mensaje" id="mensajeResultado"></p>
+      <p id="detalleResultado"></p>
+      <button id="reiniciarBtn">Volver al inicio</button>
+    </div>
   </div>
 
   <audio id="audioStart" src="start.mp3"></audio>
@@ -165,6 +207,9 @@
     const barraDiv = document.getElementById("barra");
     const temaSeleccionadoDiv = document.getElementById("temaSeleccionado");
     const resultadoDiv = document.getElementById("resultado");
+    const mensajeResultadoDiv = document.getElementById("mensajeResultado");
+    const detalleResultadoDiv = document.getElementById("detalleResultado");
+    const reiniciarBtn = document.getElementById("reiniciarBtn");
 
     const audioStart = document.getElementById("audioStart");
     const audioWarning = document.getElementById("audioWarning");
@@ -207,6 +252,7 @@
       indice = 0;
       respuestasCorrectas = 0;
       quizDiv.classList.remove("oculto");
+      resultadoDiv.classList.add("oculto");
       mostrarPregunta();
     }
 
@@ -297,15 +343,16 @@
         mensaje = "Eres un iluminado de la palabra";
       }
 
-      resultadoDiv.innerHTML = `
-        <p>Has completado el quiz.</p>
+      mensajeResultadoDiv.textContent = mensaje;
+      detalleResultadoDiv.innerHTML = `
         <p>Respuestas correctas: ${respuestasCorrectas} de ${preguntasFiltradas.length}</p>
         <p>Porcentaje: ${porcentaje.toFixed(2)}%</p>
-        <p>${mensaje}</p>
       `;
       resultadoDiv.classList.remove("oculto");
       siguienteBtn.classList.add("oculto");
     }
+
+    reiniciarBtn.addEventListener("click", () => location.reload());
 
     siguienteBtn.addEventListener("click", siguientePregunta);
 
