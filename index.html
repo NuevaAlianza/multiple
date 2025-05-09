@@ -8,13 +8,14 @@
     body {
       font-family: Arial, sans-serif;
       padding: 1rem;
-      background: #f9f9f9;
+      background: #f4f4f9;
       color: #333;
-      max-width: 600px;
+      max-width: 800px;
       margin: auto;
     }
     h1 {
       text-align: center;
+      color: #2c3e50;
     }
     select, button {
       padding: 0.5rem;
@@ -22,14 +23,20 @@
       margin: 0.5rem 0;
       width: 100%;
     }
+    select {
+      background-color: #ecf0f1;
+      border: 1px solid #bdc3c7;
+      border-radius: 4px;
+    }
     .barra {
       height: 20px;
       background: green;
       transition: width 1s linear;
       margin-top: 1rem;
+      border-radius: 10px;
     }
     .pregunta, .respuesta {
-      background: white;
+      background: #ffffff;
       padding: 1rem;
       margin-top: 1rem;
       border-radius: 8px;
@@ -42,6 +49,34 @@
       margin-top: 1rem;
       font-weight: bold;
       text-align: center;
+    }
+    .respuesta button {
+      background-color: #2ecc71;
+      color: white;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    .respuesta button:hover {
+      background-color: #27ae60;
+    }
+    .respuestas {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .respuesta-option {
+      background-color: #ecf0f1;
+      padding: 0.8rem;
+      border-radius: 5px;
+      text-align: left;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    .respuesta-option:hover {
+      background-color: #bdc3c7;
     }
   </style>
 </head>
@@ -63,7 +98,11 @@
 
   <div class="barra oculta" id="barra"></div>
   <button id="verRespuesta" class="oculto">Ver respuesta</button>
-  <div class="respuesta oculta" id="respuesta"></div>
+  <div class="respuesta oculta" id="respuesta">
+    <div class="respuestas">
+      <!-- Respuestas serán cargadas aquí -->
+    </div>
+  </div>
 
   <!-- Sonidos -->
   <audio id="audioStart" src="start.mp3" preload="auto"></audio>
@@ -83,11 +122,11 @@
       .then(res => res.text())
       .then(data => {
         const filas = data.trim().split('\n');
-        datos = filas.map(f => f.split(',')).filter(f => f.length >= 6); // Cada fila tiene 6 columnas
+        datos = filas.map(f => f.split(',')).filter(f => f.length >= 6);
 
         document.getElementById("total").innerText = `Total de preguntas: ${datos.length}`;
 
-        const temasUnicos = [...new Set(datos.map(f => f[5].trim()))]; // Columna 6 es el Tema
+        const temasUnicos = [...new Set(datos.map(f => f[5].trim()))];
         const selector = document.getElementById("temas");
         temasUnicos.forEach(t => {
           const opt = document.createElement("option");
@@ -107,7 +146,7 @@
 
       preguntasSeleccionadas = [];
       seleccionados.forEach(t => {
-        const delTema = datos.filter(f => f[5].trim() === t); // Filtrar por tema (columna 6)
+        const delTema = datos.filter(f => f[5].trim() === t);
         const mezcladas = delTema.sort(() => 0.5 - Math.random()).slice(0, 15);
         preguntasSeleccionadas.push(...mezcladas);
       });
@@ -128,48 +167,47 @@
         return;
       }
 
-      const [pregunta, correcta, incorrecta1, incorrecta2, incorrecta3, tema] = preguntasSeleccionadas[preguntaActual];
+      const [pregunta, respuestaCorrecta, tema, , , ] = preguntasSeleccionadas[preguntaActual];
       document.getElementById("textoPregunta").innerText = pregunta;
       document.getElementById("temaPregunta").innerText = tema;
-
-      // Mostrar respuestas de opción múltiple
-      const respuestas = [correcta, incorrecta1, incorrecta2, incorrecta3];
-      respuestas.sort(() => Math.random() - 0.5); // Mezclar respuestas
-
-      const opcionesHTML = respuestas.map((respuesta, index) => {
-        return `<label><input type="radio" name="respuesta" value="${respuesta}" /> ${respuesta}</label><br>`;
-      }).join('');
-      document.getElementById("respuesta").innerHTML = opcionesHTML;
       document.querySelector(".pregunta").classList.remove("oculto");
       document.getElementById("respuesta").classList.add("oculto");
       document.getElementById("verRespuesta").classList.remove("oculto");
 
       document.getElementById("contadorPreguntas").innerText = `Preguntas restantes: ${preguntasSeleccionadas.length - preguntaActual - 1}`;
-      iniciarBarra(correcta);
+      cargarRespuestas(respuestaCorrecta);
+      iniciarBarra(respuestaCorrecta);
       preguntaActual++;
     }
 
-    // Función para iniciar la barra de cuenta regresiva
+    function cargarRespuestas(respuestaCorrecta) {
+      const respuestas = ["Respuesta Correcta", "Respuesta Incorrecta 1", "Respuesta Incorrecta 2", "Respuesta Incorrecta 3"];
+      const respuestasElement = document.querySelector(".respuestas");
+      respuestasElement.innerHTML = "";
+
+      respuestas.sort(() => Math.random() - 0.5).forEach((respuesta, i) => {
+        const div = document.createElement("div");
+        div.classList.add("respuesta-option");
+        div.innerText = respuesta;
+        respuestasElement.appendChild(div);
+      });
+    }
+
     function iniciarBarra(respuesta) {
       let segundos = tiempo;
       const barra = document.getElementById("barra");
       barra.classList.remove("oculto");
       barra.style.width = "100%";
       barra.style.background = "green";
-      document.getElementById("verRespuesta").disabled = false;
 
-      // Reproducir el sonido de fondo (expectativa)
       const audioBackground = document.getElementById("audioBackground");
       audioBackground.currentTime = 0;
       audioBackground.volume = 1;
       audioBackground.play();
 
-      // Reproducir el sonido de inicio
       const audioStart = document.getElementById("audioStart");
       audioStart.currentTime = 0;
       audioStart.play();
-      audioBackground.volume = 0.2;
-      setTimeout(() => audioBackground.volume = 1, 1500);
 
       timer = setInterval(() => {
         segundos--;
@@ -186,7 +224,6 @@
         }
       }, 1000);
 
-      // Función cuando se hace clic en "Ver Respuesta"
       document.getElementById("verRespuesta").onclick = () => {
         clearInterval(timer);
         barra.classList.add("oculto");
