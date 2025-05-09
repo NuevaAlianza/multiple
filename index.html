@@ -107,6 +107,25 @@
     .oculto {
       display: none;
     }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      body {
+        padding: 0.5rem;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+      }
+      
+      .opciones {
+        gap: 0.25rem;
+      }
+
+      #siguienteBtn {
+        font-size: 1rem;
+      }
+    }
   </style>
 </head>
 <body>
@@ -120,20 +139,24 @@
     <div class="opciones" id="opciones"></div>
     <div class="barra" id="barra"></div>
     <button id="siguienteBtn" class="oculto">Siguiente pregunta ➡️</button>
+    <div id="resultado" class="oculto"></div>
   </div>
 
   <audio id="audioStart" src="start.mp3"></audio>
   <audio id="audioWarning" src="warning.mp3"></audio>
   <audio id="audioEnd" src="end.mp3"></audio>
+  <audio id="audioCorrect" src="correct.mp3"></audio>
+  <audio id="audioIncorrect" src="incorrect.mp3"></audio>
 
   <script>
     const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTd4xuQkipHXpfuxm5Zk3nxCdIdpRUxAQcfyQuk2BLPHzNVXgEe-CX6PR4D_ueCWFvcGDSrGvTrlyRt/pub?output=csv";
-
+    
     let datos = [];
     let preguntasFiltradas = [];
     let indice = 0;
     let timer;
     let tiempoMax = 58;
+    let respuestasCorrectas = 0;
 
     const temasDiv = document.getElementById("temas");
     const quizDiv = document.getElementById("quiz");
@@ -141,10 +164,13 @@
     const opcionesDiv = document.getElementById("opciones");
     const barraDiv = document.getElementById("barra");
     const temaSeleccionadoDiv = document.getElementById("temaSeleccionado");
+    const resultadoDiv = document.getElementById("resultado");
 
     const audioStart = document.getElementById("audioStart");
     const audioWarning = document.getElementById("audioWarning");
     const audioEnd = document.getElementById("audioEnd");
+    const audioCorrect = document.getElementById("audioCorrect");
+    const audioIncorrect = document.getElementById("audioIncorrect");
     const siguienteBtn = document.getElementById("siguienteBtn");
 
     fetch(url)
@@ -179,6 +205,7 @@
       preguntasFiltradas = datos.filter(d => d.tema === tema);
       shuffleArray(preguntasFiltradas);
       indice = 0;
+      respuestasCorrectas = 0;
       quizDiv.classList.remove("oculto");
       mostrarPregunta();
     }
@@ -194,86 +221,96 @@
 
       const opciones = shuffleArray([actual.correcta, ...actual.incorrectas]);
       opcionesDiv.innerHTML = "";
-      opciones.forEach(op => {
+      opciones.forEach((opcion, idx) => {
         const btn = document.createElement("button");
-        btn.textContent = op;
+        btn.textContent = opcion;
         btn.className = "opcion";
-        btn.addEventListener("click", () => verificarRespuesta(btn, actual.correcta));
+        btn.addEventListener("click", () => responder(btn, opcion === actual.correcta));
         opcionesDiv.appendChild(btn);
       });
 
-      siguienteBtn.classList.add("oculto");
-      iniciarBarra(actual.correcta);
-      audioStart.currentTime = 0;
       audioStart.play();
+      iniciarTemporizador();
     }
 
-    function iniciarBarra(correcta) {
-      let tiempo = tiempoMax;
-      barraDiv.style.width = "100%";
-      barraDiv.style.backgroundColor = "#10b981";
+    function responder(btn, esCorrecta) {
+      clearInterval(timer);
+      const correcta = esCorrecta ? "correcta" : "incorrecta";
+      btn.classList.add(correcta);
 
+      if (esCorrecta) {
+        audioCorrect.play();
+        respuestasCorrectas++;
+      } else {
+        audioIncorrect.play();
+      }
+
+      deshabilitarBotones();
+      siguienteBtn.classList.remove("oculto");
+    }
+
+    function iniciarTemporizador() {
+      let tiempoRestante = tiempoMax;
       timer = setInterval(() => {
-        tiempo--;
-        const porcentaje = (tiempo / tiempoMax) * 100;
-        barraDiv.style.width = porcentaje + "%";
-
-        if (tiempo <= 15) barraDiv.style.backgroundColor = "#facc15";
-        if (tiempo === 15) {
-          audioWarning.currentTime = 0;
+        tiempoRestante--;
+        barraDiv.style.width = `${(tiempoRestante / tiempoMax) * 100}%`;
+        
+        if (tiempoRestante <= 20) {
+          barraDiv.style.backgroundColor = "#eab308";
           audioWarning.play();
         }
-        if (tiempo <= 5) barraDiv.style.backgroundColor = "#f87171";
 
-        if (tiempo <= 0) {
+        if (tiempoRestante <= 5) {
+          barraDiv.style.backgroundColor = "#ef4444";
+        }
+
+        if (tiempoRestante === 0) {
           clearInterval(timer);
-          mostrarRespuestaAutomatica(correcta);
+          audioEnd.play();
+          siguienteBtn.classList.remove("oculto");
         }
       }, 1000);
     }
 
-    function verificarRespuesta(boton, correcta) {
-      clearInterval(timer);
-      const botones = document.querySelectorAll(".opcion");
-      botones.forEach(b => {
-        b.disabled = true;
-        if (b.textContent === correcta) {
-          b.classList.add("correcta");
-        } else {
-          b.classList.add("incorrecta");
-        }
-      });
-
-      siguienteBtn.classList.remove("oculto");
+    function deshabilitarBotones() {
+      document.querySelectorAll(".opcion").forEach(btn => btn.disabled = true);
     }
 
-    function mostrarRespuestaAutomatica(correcta) {
-      const botones = document.querySelectorAll(".opcion");
-      botones.forEach(b => {
-        b.disabled = true;
-        if (b.textContent === correcta) {
-          b.classList.add("correcta");
-        } else {
-          b.classList.add("incorrecta");
-        }
-      });
-
-      siguienteBtn.classList.remove("oculto");
-      audioEnd.currentTime = 0;
-      audioEnd.play();
-    }
-
-    siguienteBtn.addEventListener("click", () => {
-      indice++;
-      if (indice < preguntasFiltradas.length) {
+    function siguientePregunta() {
+      if (indice < preguntasFiltradas.length - 1) {
+        indice++;
         mostrarPregunta();
       } else {
-        quizDiv.innerHTML = "<h2>¡Has completado el quiz!</h2>";
+        mostrarResultado();
       }
-    });
+    }
 
-    function shuffleArray(arr) {
-      return [...arr].sort(() => Math.random() - 0.5);
+    function mostrarResultado() {
+      const porcentaje = (respuestasCorrectas / preguntasFiltradas.length) * 100;
+      let mensaje = "";
+
+      if (porcentaje < 75) {
+        mensaje = "Te falta Biblia";
+      } else if (porcentaje <= 85) {
+        mensaje = "Estás en el camino hermano";
+      } else {
+        mensaje = "Eres un iluminado de la palabra";
+      }
+
+      resultadoDiv.innerHTML = `
+        <p>Has completado el quiz.</p>
+        <p>Respuestas correctas: ${respuestasCorrectas} de ${preguntasFiltradas.length}</p>
+        <p>Porcentaje: ${porcentaje.toFixed(2)}%</p>
+        <p>${mensaje}</p>
+      `;
+      resultadoDiv.classList.remove("oculto");
+      siguienteBtn.classList.add("oculto");
+    }
+
+    siguienteBtn.addEventListener("click", siguientePregunta);
+
+    function shuffleArray(array) {
+      return array.sort(() => Math.random() - 0.5);
     }
   </script>
 </body>
