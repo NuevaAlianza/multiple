@@ -3,134 +3,125 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Preguntas por Tema</title>
+  <title>Quiz Bíblico</title>
   <style>
     body {
       font-family: Arial, sans-serif;
+      background: linear-gradient(to bottom, #f2f2f2, #e6e6e6);
       padding: 1rem;
-      background: #f9f9f9;
-      color: #333;
       max-width: 600px;
       margin: auto;
     }
+
     h1 {
       text-align: center;
     }
+
     select, button {
-      padding: 0.5rem;
+      padding: 0.6rem;
       font-size: 1rem;
-      margin: 0.5rem 0;
       width: 100%;
+      margin-top: 0.5rem;
     }
+
     .barra {
       height: 20px;
       background: green;
-      transition: width 1s linear;
-      margin-top: 1rem;
-      border-radius: 10px;
+      margin: 1rem 0;
+      transition: width 1s linear, background-color 0.5s;
     }
-    .pregunta, .respuesta {
-      background: white;
+
+    .pregunta {
+      background: #fff;
       padding: 1rem;
+      border-radius: 10px;
       margin-top: 1rem;
-      border-radius: 8px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
+
+    .opciones {
+      margin-top: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .opcion {
+      background: #eee;
+      padding: 0.7rem;
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .correcta {
+      background: #c8e6c9 !important;
+    }
+
+    .incorrecta {
+      background: #ffcdd2 !important;
+    }
+
     .oculto {
       display: none;
     }
+
     #contadorPreguntas {
-      margin-top: 1rem;
-      font-weight: bold;
       text-align: center;
-    }
-    .botones {
-      display: flex;
-      justify-content: space-between;
-    }
-    .opciones {
+      font-weight: bold;
       margin-top: 1rem;
     }
-    .opcion {
-      background: #f4f4f4;
-      border: 2px solid #ddd;
-      padding: 10px;
-      margin: 5px 0;
-      border-radius: 8px;
-      width: 100%;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-    .opcion:hover {
-      background-color: #e0e0e0;
-    }
-    .correcta {
-      background-color: green !important;
-      color: white !important;
-    }
-    .incorrecta {
-      background-color: red !important;
-      color: white !important;
+
+    @media (max-width: 600px) {
+      body {
+        padding: 0.5rem;
+      }
     }
   </style>
 </head>
 <body>
-  <h1>Consulta de Preguntas</h1>
-  <p id="total"></p>
+  <h1>Quiz Bíblico</h1>
 
-  <label for="temas">Selecciona hasta 3 temas (usa Ctrl o Cmd):</label>
+  <label for="temas">Selecciona hasta 3 temas:</label>
   <select id="temas" multiple size="5"></select>
   <button id="cargar">Cargar preguntas</button>
   <button id="siguiente" disabled>Ver siguiente pregunta</button>
 
   <div id="contadorPreguntas" class="oculto"></div>
 
-  <div class="pregunta oculta">
+  <div class="pregunta oculto">
     <h3 id="textoPregunta"></h3>
     <p><strong>Tema:</strong> <span id="temaPregunta"></span></p>
-  </div>
-
-  <div class="barra oculta" id="barra"></div>
-  
-  <div class="opciones oculta" id="opciones">
-    <button id="opcionA" class="opcion"></button>
-    <button id="opcionB" class="opcion"></button>
-    <button id="opcionC" class="opcion"></button>
-    <button id="opcionD" class="opcion"></button>
+    <div id="barra" class="barra oculto"></div>
+    <div id="opciones" class="opciones"></div>
   </div>
 
   <audio id="audioStart" src="start.mp3" preload="auto"></audio>
-  <audio id="audioWarning" src="warning.mp3" preload="auto"></audio>
+  <audio id="audioBackground" src="background.mp3" preload="auto" loop></audio>
   <audio id="audioEnd" src="end.mp3" preload="auto"></audio>
 
   <script>
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTd4xuQkipHXpfuxm5Zk3nxCdIdpRUxAQcfyQuk2BLPHzNVXgEe-CX6PR4D_ueCWFvcGDSrGvTrlyRt/pub?output=csv";
-    let datos = [];
-    let preguntasSeleccionadas = [];
-    let preguntaActual = 0;
-    let timer, tiempo = 58;
-    let respuestaCorrectaGlobal = "";
+    let datos = [], preguntasSeleccionadas = [], preguntaActual = 0;
+    let tiempo = 58, timer;
 
-    // Cargar datos CSV
     fetch(CSV_URL)
       .then(res => res.text())
-      .then(data => {
-        const filas = data.trim().split('\n');
-        datos = filas.map(f => f.split(',')).filter(f => f.length >= 6); // Verificar que haya al menos 6 columnas
+      .then(texto => {
+        const filas = texto.trim().split("\n").map(f => f.split(","));
+        datos = filas.filter(f => f.length >= 7); // mínimo 7 columnas
 
-        document.getElementById("total").innerText = `Total de preguntas: ${datos.length}`;
-
-        const temasUnicos = [...new Set(datos.map(f => f[5].trim()))]; // Usar la columna F para los temas
+        const temasUnicos = [...new Set(datos.map(f => f[6].trim()))];
         const selector = document.getElementById("temas");
         temasUnicos.forEach(t => {
           const opt = document.createElement("option");
           opt.value = t;
-          opt.innerText = t;
+          opt.textContent = t;
           selector.appendChild(opt);
         });
       });
 
-    // Cargar preguntas al hacer clic en "Cargar preguntas"
     document.getElementById("cargar").addEventListener("click", () => {
       const seleccionados = Array.from(document.getElementById("temas").selectedOptions).map(o => o.value);
       if (seleccionados.length === 0 || seleccionados.length > 3) {
@@ -140,126 +131,105 @@
 
       preguntasSeleccionadas = [];
       seleccionados.forEach(t => {
-        const delTema = datos.filter(f => f[5].trim() === t);
+        const delTema = datos.filter(f => f[6].trim() === t);
         const mezcladas = delTema.sort(() => 0.5 - Math.random()).slice(0, 15);
         preguntasSeleccionadas.push(...mezcladas);
       });
 
       preguntasSeleccionadas = preguntasSeleccionadas.sort(() => 0.5 - Math.random());
       preguntaActual = 0;
+
       document.getElementById("siguiente").disabled = false;
       document.getElementById("contadorPreguntas").classList.remove("oculto");
+
       mostrarPregunta();
     });
 
-    // Ver siguiente pregunta
     document.getElementById("siguiente").addEventListener("click", mostrarPregunta);
 
     function mostrarPregunta() {
       if (preguntaActual >= preguntasSeleccionadas.length) {
-        alert("No hay más preguntas");
+        alert("Fin de las preguntas.");
         return;
       }
 
-      const [pregunta, respuestaCorrecta, tema, res1, res2, res3] = preguntasSeleccionadas[preguntaActual];
-      document.getElementById("textoPregunta").innerText = pregunta;
-      document.getElementById("temaPregunta").innerText = tema;
+      const [pregunta, correcta, , inc1, inc2, inc3, tema] = preguntasSeleccionadas[preguntaActual];
+      const opciones = [correcta, inc1, inc2, inc3].sort(() => 0.5 - Math.random());
+
+      document.getElementById("textoPregunta").textContent = pregunta;
+      document.getElementById("temaPregunta").textContent = tema;
       document.querySelector(".pregunta").classList.remove("oculto");
-      document.getElementById("respuesta").classList.add("oculto");
 
-      // Mostrar las opciones de respuesta
-      document.getElementById("opciones").classList.remove("oculto");
-      const opciones = [respuestaCorrecta, res1, res2, res3];
-      opciones.sort(() => 0.5 - Math.random()); // Mezclar las opciones
+      const contenedor = document.getElementById("opciones");
+      contenedor.innerHTML = "";
 
-      document.getElementById("opcionA").innerText = opciones[0];
-      document.getElementById("opcionB").innerText = opciones[1];
-      document.getElementById("opcionC").innerText = opciones[2];
-      document.getElementById("opcionD").innerText = opciones[3];
+      opciones.forEach(op => {
+        const btn = document.createElement("div");
+        btn.className = "opcion";
+        btn.textContent = op;
+        btn.onclick = () => {
+          detenerTiempo();
+          marcarRespuestas(op, correcta);
+        };
+        contenedor.appendChild(btn);
+      });
 
-      // Guardar la respuesta correcta globalmente
-      respuestaCorrectaGlobal = respuestaCorrecta;
+      document.getElementById("contadorPreguntas").textContent =
+        `Preguntas restantes: ${preguntasSeleccionadas.length - preguntaActual - 1}`;
 
-      document.getElementById("contadorPreguntas").innerText = `Preguntas restantes: ${preguntasSeleccionadas.length - preguntaActual - 1}`;
-      iniciarBarra(respuestaCorrecta);
+      iniciarBarra(correcta);
       preguntaActual++;
     }
 
-    // Función para iniciar la barra de cuenta regresiva
-    function iniciarBarra(respuestaCorrecta) {
-      let segundos = tiempo;
+    function marcarRespuestas(seleccionada, correcta) {
+      const botones = document.querySelectorAll(".opcion");
+      botones.forEach(b => {
+        if (b.textContent === correcta) {
+          b.classList.add("correcta");
+        } else {
+          b.classList.add("incorrecta");
+        }
+        b.onclick = null;
+      });
+    }
+
+    function iniciarBarra(correcta) {
       const barra = document.getElementById("barra");
       barra.classList.remove("oculto");
       barra.style.width = "100%";
       barra.style.background = "green";
-      barra.style.transition = "width 1s linear";  // Mejora de la transición
-      document.getElementById("siguiente").disabled = true;
 
-      // Reproducir el sonido de fondo (expectativa)
+      // Sonido de inicio y fondo
       const audioStart = document.getElementById("audioStart");
+      const audioBg = document.getElementById("audioBackground");
       audioStart.currentTime = 0;
       audioStart.play();
+      audioBg.currentTime = 0;
+      audioBg.volume = 0.3;
+      audioBg.play();
 
+      let segundos = tiempo;
       timer = setInterval(() => {
         segundos--;
         barra.style.width = `${(segundos / tiempo) * 100}%`;
 
-        // Cambio de color según el tiempo
-        if (segundos <= 20) barra.style.background = "orange";
         if (segundos <= 10) barra.style.background = "red";
+        else if (segundos <= 20) barra.style.background = "orange";
 
         if (segundos <= 0) {
-          clearInterval(timer);
-          barra.classList.add("oculto");
-          // Al finalizar el tiempo, colorear las respuestas
-          colorearRespuestas();
+          detenerTiempo();
+          marcarRespuestas("", correcta);
         }
       }, 1000);
     }
 
-    function colorearRespuestas() {
-      const opciones = document.querySelectorAll(".opcion");
-      opciones.forEach(opcion => {
-        if (opcion.innerText === respuestaCorrectaGlobal) {
-          opcion.classList.add("correcta");
-        } else {
-          opcion.classList.add("incorrecta");
-        }
-      });
-      // Deshabilitar las opciones después de hacer clic
-      opciones.forEach(o => o.disabled = true);
-    }
-
-    // Agregar eventos de click para las opciones
-    document.getElementById("opcionA").addEventListener("click", function() {
-      verificarRespuesta(this);
-    });
-    document.getElementById("opcionB").addEventListener("click", function() {
-      verificarRespuesta(this);
-    });
-    document.getElementById("opcionC").addEventListener("click", function() {
-      verificarRespuesta(this);
-    });
-    document.getElementById("opcionD").addEventListener("click", function() {
-      verificarRespuesta(this);
-    });
-
-    function verificarRespuesta(opcion) {
-      const opciones = document.querySelectorAll(".opcion");
-      // Primero, limpiar los colores previos
-      opciones.forEach(o => o.classList.remove("correcta", "incorrecta"));
-      
-      if (opcion.innerText === respuestaCorrectaGlobal) {
-        opcion.classList.add("correcta");
-      } else {
-        opcion.classList.add("incorrecta");
-        // Resaltar la respuesta correcta en verde
-        Array.from(opciones).find(o => o.innerText === respuestaCorrectaGlobal).classList.add("correcta");
-      }
-
-      // Deshabilitar las opciones después de hacer clic
-      opciones.forEach(o => o.disabled = true);
+    function detenerTiempo() {
+      clearInterval(timer);
+      document.getElementById("barra").classList.add("oculto");
+      document.getElementById("audioBackground").pause();
+      document.getElementById("audioEnd").play();
     }
   </script>
 </body>
 </html>
+
