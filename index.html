@@ -56,6 +56,9 @@
       display: flex;
       justify-content: space-between;
     }
+    .opciones {
+      margin-top: 1rem;
+    }
   </style>
 </head>
 <body>
@@ -77,6 +80,14 @@
   <div class="barra oculta" id="barra"></div>
   <button id="verRespuesta" class="oculto">Ver respuesta</button>
   <div class="respuesta oculta" id="respuesta"></div>
+  
+  <!-- Opciones de respuesta -->
+  <div class="opciones oculta" id="opciones">
+    <button id="opcionA" class="respuestaIncorrecta"></button>
+    <button id="opcionB" class="respuestaIncorrecta"></button>
+    <button id="opcionC" class="respuestaIncorrecta"></button>
+    <button id="opcionD" class="respuestaIncorrecta"></button>
+  </div>
 
   <audio id="audioStart" src="start.mp3" preload="auto"></audio>
   <audio id="audioWarning" src="warning.mp3" preload="auto"></audio>
@@ -146,13 +157,23 @@
       document.getElementById("respuesta").classList.add("oculto");
       document.getElementById("verRespuesta").classList.remove("oculto");
 
+      // Mostrar las opciones de respuesta
+      document.getElementById("opciones").classList.remove("oculto");
+      const opciones = [respuestaCorrecta, res1, res2, res3];
+      opciones.sort(() => 0.5 - Math.random()); // Mezclar las opciones
+
+      document.getElementById("opcionA").innerText = opciones[0];
+      document.getElementById("opcionB").innerText = opciones[1];
+      document.getElementById("opcionC").innerText = opciones[2];
+      document.getElementById("opcionD").innerText = opciones[3];
+
       document.getElementById("contadorPreguntas").innerText = `Preguntas restantes: ${preguntasSeleccionadas.length - preguntaActual - 1}`;
-      iniciarBarra(respuestaCorrecta, res1, res2, res3);
+      iniciarBarra(respuestaCorrecta);
       preguntaActual++;
     }
 
     // Función para iniciar la barra de cuenta regresiva
-    function iniciarBarra(respuestaCorrecta, res1, res2, res3) {
+    function iniciarBarra(respuestaCorrecta) {
       let segundos = tiempo;
       const barra = document.getElementById("barra");
       barra.classList.remove("oculto");
