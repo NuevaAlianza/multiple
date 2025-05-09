@@ -83,7 +83,7 @@
   <audio id="audioEnd" src="end.mp3" preload="auto"></audio>
 
   <script>
-    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTdFQb05RiZ5CPUh8brf-HWARLiMs-UaQFdXRj8iZmonLnKJr_R6Mlzy8FDnGkKc1rZC2SS5LvHx4aa/pub?output=csv";
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTd4xuQkipHXpfuxm5Zk3nxCdIdpRUxAQcfyQuk2BLPHzNVXgEe-CX6PR4D_ueCWFvcGDSrGvTrlyRt/pub?output=csv";
     let datos = [];
     let preguntasSeleccionadas = [];
     let preguntaActual = 0;
@@ -94,11 +94,11 @@
       .then(res => res.text())
       .then(data => {
         const filas = data.trim().split('\n');
-        datos = filas.map(f => f.split(',')).filter(f => f.length >= 3);
+        datos = filas.map(f => f.split(',')).filter(f => f.length >= 6); // Verificar que haya al menos 6 columnas
 
         document.getElementById("total").innerText = `Total de preguntas: ${datos.length}`;
 
-        const temasUnicos = [...new Set(datos.map(f => f[5].trim()))];
+        const temasUnicos = [...new Set(datos.map(f => f[5].trim()))]; // Usar la columna F para los temas
         const selector = document.getElementById("temas");
         temasUnicos.forEach(t => {
           const opt = document.createElement("option");
