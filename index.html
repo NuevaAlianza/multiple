@@ -44,14 +44,6 @@
       font-weight: bold;
       text-align: center;
     }
-    .respuestaCorrecta {
-      color: green;
-      font-weight: bold;
-    }
-    .respuestaIncorrecta {
-      color: red;
-      font-weight: bold;
-    }
     .botones {
       display: flex;
       justify-content: space-between;
@@ -99,10 +91,7 @@
   </div>
 
   <div class="barra oculta" id="barra"></div>
-  <button id="verRespuesta" class="oculto">Ver respuesta</button>
-  <div class="respuesta oculta" id="respuesta"></div>
   
-  <!-- Opciones de respuesta -->
   <div class="opciones oculta" id="opciones">
     <button id="opcionA" class="opcion"></button>
     <button id="opcionB" class="opcion"></button>
@@ -177,7 +166,6 @@
       document.getElementById("temaPregunta").innerText = tema;
       document.querySelector(".pregunta").classList.remove("oculto");
       document.getElementById("respuesta").classList.add("oculto");
-      document.getElementById("verRespuesta").classList.remove("oculto");
 
       // Mostrar las opciones de respuesta
       document.getElementById("opciones").classList.remove("oculto");
@@ -205,7 +193,7 @@
       barra.style.width = "100%";
       barra.style.background = "green";
       barra.style.transition = "width 1s linear";  // Mejora de la transición
-      document.getElementById("verRespuesta").disabled = false;
+      document.getElementById("siguiente").disabled = true;
 
       // Reproducir el sonido de fondo (expectativa)
       const audioStart = document.getElementById("audioStart");
@@ -223,26 +211,23 @@
         if (segundos <= 0) {
           clearInterval(timer);
           barra.classList.add("oculto");
-          document.getElementById("respuesta").innerText = respuestaCorrecta;
-          document.getElementById("respuesta").classList.remove("oculto");
-          document.getElementById("verRespuesta").classList.add("oculto");
-
-          const audioEnd = document.getElementById("audioEnd");
-          audioEnd.play();
+          // Al finalizar el tiempo, colorear las respuestas
+          colorearRespuestas();
         }
       }, 1000);
+    }
 
-      // Función cuando se hace clic en "Ver Respuesta"
-      document.getElementById("verRespuesta").onclick = () => {
-        clearInterval(timer);
-        barra.classList.add("oculto");
-        document.getElementById("respuesta").innerText = respuestaCorrecta;
-        document.getElementById("respuesta").classList.remove("oculto");
-        document.getElementById("verRespuesta").classList.add("oculto");
-
-        const audioEnd = document.getElementById("audioEnd");
-        audioEnd.play();
-      };
+    function colorearRespuestas() {
+      const opciones = document.querySelectorAll(".opcion");
+      opciones.forEach(opcion => {
+        if (opcion.innerText === respuestaCorrectaGlobal) {
+          opcion.classList.add("correcta");
+        } else {
+          opcion.classList.add("incorrecta");
+        }
+      });
+      // Deshabilitar las opciones después de hacer clic
+      opciones.forEach(o => o.disabled = true);
     }
 
     // Agregar eventos de click para las opciones
