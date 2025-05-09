@@ -1,53 +1,116 @@
-@media (max-width: 768px) {
+<style>
   body {
+    font-family: sans-serif;
     padding: 1rem;
-    font-size: 1.1rem;
+    background-color: #f0f4f8;
+    color: #1f2937;
+    max-width: 600px;
+    margin: auto;
   }
 
   h1 {
-    font-size: 1.5rem;
-  }
-
-  .pregunta {
-    font-size: 1.1rem;
-  }
-
-  .opcion {
-    padding: 1rem;
-    font-size: 1rem;
-  }
-
-  #siguienteBtn {
-    font-size: 1rem;
-    padding: 1rem;
+    text-align: center;
+    color: #111827;
   }
 
   #temas {
-    flex-direction: column;
-    gap: 0.75rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
   }
 
   .tema {
-    width: 100%;
-    text-align: center;
+    padding: 0.5rem 1rem;
+    background-color: #e5e7eb;
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
   }
-}
 
-@media (max-width: 480px) {
-  h1 {
-    font-size: 1.25rem;
+  .tema.selected {
+    background-color: #2563eb;
+    color: white;
+  }
+
+  #quiz {
+    margin-top: 1rem;
   }
 
   .pregunta {
-    font-size: 1rem;
+    font-size: 1.25rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+  }
+
+  .opciones {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
   }
 
   .opcion {
-    font-size: 0.95rem;
-    padding: 0.9rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    background-color: white;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
   }
 
-  #siguienteBtn {
-    font-size: 0.95rem;
+  .opcion:hover {
+    background-color: #f3f4f6;
   }
-}
+
+  .correcta {
+    background-color: #22c55e !important;
+    color: #064e3b;
+    border-color: #15803d;
+  }
+
+  .incorrecta {
+    background-color: #ef4444 !important;
+    color: #7f1d1d;
+    border-color: #b91c1c;
+  }
+
+  .barra {
+    height: 8px;
+    background-color: #10b981;
+    margin-top: 1rem;
+    border-radius: 8px;
+    transition: width 1s linear, background-color 1s ease;
+  }
+
+  #siguienteBtn, #reiniciarBtn {
+    margin-top: 1.5rem;
+    width: 100%;
+    padding: 1rem;
+    font-size: 1.2rem;
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    transition: background 0.3s ease;
+  }
+
+  #siguienteBtn:hover, #reiniciarBtn:hover {
+    background-color: #1d4ed8;
+  }
+
+  .oculto {
+    display: none;
+  }
+
+  .resultado-final {
+    font-size: 1.25rem;
+    margin-top: 2rem;
+    padding: 1rem;
+    background-color: #fef3c7;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: bold;
+    color: #924
