@@ -1,0 +1,122 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Preguntas por Tema</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 1rem; background: #f9f9f9; color: #333; max-width: 600px; margin: auto; }
+    h1 { text-align: center; }
+    select, button { padding: 0.5rem; font-size: 1rem; margin: 0.5rem 0; width: 100%; }
+    .barra { height: 20px; background: green; transition: width 1s linear; margin-top: 1rem; }
+    .pregunta, .respuesta { background: white; padding: 1rem; margin-top: 1rem; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    .oculto { display: none; }
+    #contadorPreguntas { margin-top: 1rem; font-weight: bold; text-align: center; }
+  </style>
+</head>
+<body>
+  <h1>Consulta de Preguntas</h1>
+  <p id="total"></p>
+  <label for="temas">Selecciona hasta 3 temas (usa Ctrl o Cmd):</label>
+  <select id="temas" multiple size="5"></select>
+  <button id="cargar">Cargar preguntas</button>
+  <button id="siguiente" disabled>Ver siguiente pregunta</button>
+  <div id="contadorPreguntas" class="oculto"></div>
+  <div class="pregunta oculto"><h3 id="textoPregunta"></h3><p><strong>Tema:</strong> <span id="temaPregunta"></span></p></div>
+  <div class="barra oculto" id="barra"></div>
+  <button id="verRespuesta" class="oculto">Ver respuesta</button>
+  <div class="respuesta oculto" id="respuesta"></div>
+
+  <audio id="soundStart" src="start.mp3"></audio>
+  <audio id="soundWarning" src="warning.mp3"></audio>
+  <audio id="soundEnd" src="end.mp3"></audio>
+
+  <script>
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTdFQb05RiZ5CPUh8brf-HWARLiMs-UaQFdXRj8iZmonLnKJr_R6Mlzy8FDnGkKc1rZC2SS5LvHx4aa/pub?output=csv";
+    let datos = [], preguntasSeleccionadas = [], preguntaActual = 0, timer, tiempo = 58;
+    const soundStart = document.getElementById("soundStart");
+    const soundWarning = document.getElementById("soundWarning");
+    const soundEnd = document.getElementById("soundEnd");
+
+    fetch(CSV_URL)
+      .then(res => res.text())
+      .then(data => {
+        const filas = data.trim().split('\n');
+        datos = filas.map(f => f.split(',')).filter(f => f.length >= 3);
+        document.getElementById("total").innerText = `Total de preguntas: ${datos.length}`;
+        const temasUnicos = [...new Set(datos.map(f => f[2].trim()))];
+        const selector = document.getElementById("temas");
+        temasUnicos.forEach(t => {
+          const opt = document.createElement("option");
+          opt.value = t; opt.innerText = t; selector.appendChild(opt);
+        });
+      });
+
+    document.getElementById("cargar").addEventListener("click", () => {
+      const seleccionados = Array.from(document.getElementById("temas").selectedOptions).map(o => o.value);
+      if (seleccionados.length === 0 || seleccionados.length > 3) { alert("Selecciona entre 1 y 3 temas."); return; }
+      preguntasSeleccionadas = [];
+      seleccionados.forEach(t => {
+        const delTema = datos.filter(f => f[2].trim() === t);
+        const mezcladas = delTema.sort(() => 0.5 - Math.random()).slice(0, 15);
+        preguntasSeleccionadas.push(...mezcladas);
+      });
+      preguntasSeleccionadas = preguntasSeleccionadas.sort(() => 0.5 - Math.random());
+      preguntaActual = 0;
+      document.getElementById("siguiente").disabled = false;
+      document.getElementById("contadorPreguntas").classList.remove("oculto");
+      mostrarPregunta();
+    });
+
+    document.getElementById("siguiente").addEventListener("click", mostrarPregunta);
+
+    function mostrarPregunta() {
+      if (preguntaActual >= preguntasSeleccionadas.length) { alert("No hay más preguntas"); return; }
+      const [pregunta, respuesta, tema] = preguntasSeleccionadas[preguntaActual];
+      document.getElementById("textoPregunta").innerText = pregunta;
+      document.getElementById("temaPregunta").innerText = tema;
+      document.querySelector(".pregunta").classList.remove("oculto");
+      document.getElementById("respuesta").classList.add("oculto");
+      document.getElementById("verRespuesta").classList.remove("oculto");
+      document.getElementById("contadorPreguntas").innerText = `Preguntas restantes: ${preguntasSeleccionadas.length - preguntaActual - 1}`;
+      iniciarBarra(respuesta);
+      preguntaActual++;
+    }
+
+    function iniciarBarra(respuesta) {
+      let segundos = tiempo;
+      const barra = document.getElementById("barra");
+      barra.classList.remove("oculto");
+      barra.style.width = "100%";
+      barra.style.background = "green";
+      document.getElementById("verRespuesta").disabled = false;
+      soundStart.play();
+      timer = setInterval(() => {
+        segundos--;
+        barra.style.width = `${(segundos / tiempo) * 100}%`;
+        if (segundos === 10) soundWarning.play();
+        if (segundos <= 20) barra.style.background = "orange";
+        if (segundos <= 10) barra.style.background = "red";
+        if (segundos <= 0) {
+          clearInterval(timer);
+          barra.classList.add("oculto");
+          document.getElementById("respuesta").innerText = respuesta;
+          document.getElementById("respuesta").classList.remove("oculto");
+          document.getElementById("verRespuesta").classList.add("oculto");
+          soundEnd.play();
+        }
+      }, 1000);
+
+      document.getElementById("verRespuesta").onclick = () => {
+        clearInterval(timer);
+        barra.classList.add("oculto");
+        document.getElementById("respuesta").innerText = respuesta;
+        document.getElementById("respuesta").classList.remove("oculto");
+        document.getElementById("verRespuesta").classList.add("oculto");
+        soundEnd.play();
+      };
+    }
+  </script>
+</body>
+</html>
