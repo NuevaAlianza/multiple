@@ -2,150 +2,200 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Preguntas de Opción Múltiple</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Preguntas por Tema</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f4f4f8;
-      color: #222;
       padding: 1rem;
-      max-width: 700px;
+      background: #f9f9f9;
+      color: #333;
+      max-width: 600px;
       margin: auto;
     }
     h1 {
       text-align: center;
     }
-    .pregunta {
-      background: #fff;
-      border-radius: 12px;
-      padding: 1.5rem;
-      margin-top: 1.5rem;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    .opcion {
-      display: block;
+    select, button {
+      padding: 0.5rem;
+      font-size: 1rem;
       margin: 0.5rem 0;
-      padding: 0.75rem;
+      width: 100%;
+    }
+    .barra {
+      height: 20px;
+      background: green;
+      transition: width 1s linear;
+      margin-top: 1rem;
+    }
+    .pregunta, .respuesta {
+      background: white;
+      padding: 1rem;
+      margin-top: 1rem;
       border-radius: 8px;
-      border: 1px solid #ccc;
-      cursor: pointer;
-      background: #fafafa;
-      transition: background 0.3s;
-    }
-    .opcion:hover {
-      background: #e6f7ff;
-    }
-    .correcta {
-      background-color: #d4edda !important;
-      border-color: #28a745 !important;
-    }
-    .incorrecta {
-      background-color: #f8d7da !important;
-      border-color: #dc3545 !important;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
     .oculto {
       display: none;
     }
-    button {
+    #contadorPreguntas {
       margin-top: 1rem;
-      padding: 0.75rem 1.25rem;
-      font-size: 1rem;
-      background: #007bff;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    button:disabled {
-      background: #ccc;
+      font-weight: bold;
+      text-align: center;
     }
   </style>
 </head>
 <body>
-  <h1>Trivia Bíblica</h1>
-  <div>
-    <label for="temas">Selecciona un tema:</label>
-    <select id="temas"></select>
-    <button id="cargar">Cargar preguntas</button>
+  <h1>Consulta de Preguntas</h1>
+  <p id="total"></p>
+
+  <label for="temas">Selecciona hasta 3 temas (usa Ctrl o Cmd):</label>
+  <select id="temas" multiple size="5"></select>
+  <button id="cargar">Cargar preguntas</button>
+  <button id="siguiente" disabled>Ver siguiente pregunta</button>
+
+  <div id="contadorPreguntas" class="oculto"></div>
+
+  <div class="pregunta oculta">
+    <h3 id="textoPregunta"></h3>
+    <p><strong>Tema:</strong> <span id="temaPregunta"></span></p>
   </div>
 
-  <div id="contenido" class="oculto">
-    <div id="pregunta" class="pregunta"></div>
-    <div id="opciones"></div>
-    <button id="siguiente" disabled>Siguiente pregunta</button>
-  </div>
+  <div class="barra oculta" id="barra"></div>
+  <button id="verRespuesta" class="oculto">Ver respuesta</button>
+  <div class="respuesta oculta" id="respuesta"></div>
+
+  <!-- Sonidos -->
+  <audio id="audioStart" src="start.mp3" preload="auto"></audio>
+  <audio id="audioWarning" src="warning.mp3" preload="auto"></audio>
+  <audio id="audioEnd" src="end.mp3" preload="auto"></audio>
+  <audio id="audioBackground" src="background.mp3" preload="auto" loop></audio>
 
   <script>
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTd4xuQkipHXpfuxm5Zk3nxCdIdpRUxAQcfyQuk2BLPHzNVXgEe-CX6PR4D_ueCWFvcGDSrGvTrlyRt/pub?output=csv";
+    let datos = [];
+    let preguntasSeleccionadas = [];
+    let preguntaActual = 0;
+    let timer, tiempo = 58;
 
-    let preguntas = [], actuales = [], indice = 0;
-
+    // Cargar datos CSV
     fetch(CSV_URL)
       .then(res => res.text())
-      .then(text => {
-        const filas = text.trim().split("\n").map(f => f.split(","));
-        preguntas = filas.slice(1).map(f => ({
-          pregunta: f[0],
-          correcta: f[1],
-          incorrectas: [f[2], f[3], f[4]],
-          tema: f[5]
-        }));
+      .then(data => {
+        const filas = data.trim().split('\n');
+        datos = filas.map(f => f.split(',')).filter(f => f.length >= 6); // Cada fila tiene 6 columnas
 
-        const temasUnicos = [...new Set(preguntas.map(p => p.tema))];
-        const select = document.getElementById("temas");
+        document.getElementById("total").innerText = `Total de preguntas: ${datos.length}`;
+
+        const temasUnicos = [...new Set(datos.map(f => f[5].trim()))]; // Columna 6 es el Tema
+        const selector = document.getElementById("temas");
         temasUnicos.forEach(t => {
           const opt = document.createElement("option");
           opt.value = t;
           opt.innerText = t;
-          select.appendChild(opt);
+          selector.appendChild(opt);
         });
       });
 
-    document.getElementById("cargar").onclick = () => {
-      const tema = document.getElementById("temas").value;
-      if (!tema) return alert("Selecciona un tema");
+    // Cargar preguntas al hacer clic en "Cargar preguntas"
+    document.getElementById("cargar").addEventListener("click", () => {
+      const seleccionados = Array.from(document.getElementById("temas").selectedOptions).map(o => o.value);
+      if (seleccionados.length === 0 || seleccionados.length > 3) {
+        alert("Selecciona entre 1 y 3 temas.");
+        return;
+      }
 
-      actuales = preguntas.filter(p => p.tema === tema).sort(() => 0.5 - Math.random()).slice(0, 15);
-      indice = 0;
-      document.getElementById("contenido").classList.remove("oculto");
+      preguntasSeleccionadas = [];
+      seleccionados.forEach(t => {
+        const delTema = datos.filter(f => f[5].trim() === t); // Filtrar por tema (columna 6)
+        const mezcladas = delTema.sort(() => 0.5 - Math.random()).slice(0, 15);
+        preguntasSeleccionadas.push(...mezcladas);
+      });
+
+      preguntasSeleccionadas = preguntasSeleccionadas.sort(() => 0.5 - Math.random());
+      preguntaActual = 0;
+      document.getElementById("siguiente").disabled = false;
+      document.getElementById("contadorPreguntas").classList.remove("oculto");
       mostrarPregunta();
-    };
+    });
+
+    // Ver siguiente pregunta
+    document.getElementById("siguiente").addEventListener("click", mostrarPregunta);
 
     function mostrarPregunta() {
-      document.getElementById("siguiente").disabled = true;
-      const p = actuales[indice];
-      document.getElementById("pregunta").innerText = `${indice + 1}. ${p.pregunta}`;
+      if (preguntaActual >= preguntasSeleccionadas.length) {
+        alert("No hay más preguntas");
+        return;
+      }
 
-      const opciones = [p.correcta, ...p.incorrectas].sort(() => 0.5 - Math.random());
-      const contenedor = document.getElementById("opciones");
-      contenedor.innerHTML = "";
+      const [pregunta, correcta, incorrecta1, incorrecta2, incorrecta3, tema] = preguntasSeleccionadas[preguntaActual];
+      document.getElementById("textoPregunta").innerText = pregunta;
+      document.getElementById("temaPregunta").innerText = tema;
 
-      opciones.forEach(op => {
-        const btn = document.createElement("button");
-        btn.className = "opcion";
-        btn.innerText = op;
-        btn.onclick = () => {
-          document.querySelectorAll(".opcion").forEach(b => {
-            b.disabled = true;
-            if (b.innerText === p.correcta) b.classList.add("correcta");
-            else if (b.innerText === op && op !== p.correcta) b.classList.add("incorrecta");
-          });
-          document.getElementById("siguiente").disabled = false;
-        };
-        contenedor.appendChild(btn);
-      });
+      // Mostrar respuestas de opción múltiple
+      const respuestas = [correcta, incorrecta1, incorrecta2, incorrecta3];
+      respuestas.sort(() => Math.random() - 0.5); // Mezclar respuestas
+
+      const opcionesHTML = respuestas.map((respuesta, index) => {
+        return `<label><input type="radio" name="respuesta" value="${respuesta}" /> ${respuesta}</label><br>`;
+      }).join('');
+      document.getElementById("respuesta").innerHTML = opcionesHTML;
+      document.querySelector(".pregunta").classList.remove("oculto");
+      document.getElementById("respuesta").classList.add("oculto");
+      document.getElementById("verRespuesta").classList.remove("oculto");
+
+      document.getElementById("contadorPreguntas").innerText = `Preguntas restantes: ${preguntasSeleccionadas.length - preguntaActual - 1}`;
+      iniciarBarra(correcta);
+      preguntaActual++;
     }
 
-    document.getElementById("siguiente").onclick = () => {
-      indice++;
-      if (indice >= actuales.length) {
-        alert("¡Has terminado el cuestionario!");
-        document.getElementById("contenido").classList.add("oculto");
-      } else {
-        mostrarPregunta();
-      }
-    };
+    // Función para iniciar la barra de cuenta regresiva
+    function iniciarBarra(respuesta) {
+      let segundos = tiempo;
+      const barra = document.getElementById("barra");
+      barra.classList.remove("oculto");
+      barra.style.width = "100%";
+      barra.style.background = "green";
+      document.getElementById("verRespuesta").disabled = false;
+
+      // Reproducir el sonido de fondo (expectativa)
+      const audioBackground = document.getElementById("audioBackground");
+      audioBackground.currentTime = 0;
+      audioBackground.volume = 1;
+      audioBackground.play();
+
+      // Reproducir el sonido de inicio
+      const audioStart = document.getElementById("audioStart");
+      audioStart.currentTime = 0;
+      audioStart.play();
+      audioBackground.volume = 0.2;
+      setTimeout(() => audioBackground.volume = 1, 1500);
+
+      timer = setInterval(() => {
+        segundos--;
+        barra.style.width = `${(segundos / tiempo) * 100}%`;
+        if (segundos <= 20) barra.style.background = "orange";
+        if (segundos <= 10) barra.style.background = "red";
+        if (segundos <= 0) {
+          clearInterval(timer);
+          barra.classList.add("oculto");
+          document.getElementById("respuesta").innerText = respuesta;
+          document.getElementById("respuesta").classList.remove("oculto");
+          document.getElementById("verRespuesta").classList.add("oculto");
+          audioBackground.pause();
+        }
+      }, 1000);
+
+      // Función cuando se hace clic en "Ver Respuesta"
+      document.getElementById("verRespuesta").onclick = () => {
+        clearInterval(timer);
+        barra.classList.add("oculto");
+        document.getElementById("respuesta").innerText = respuesta;
+        document.getElementById("respuesta").classList.remove("oculto");
+        document.getElementById("verRespuesta").classList.add("oculto");
+        audioBackground.pause();
+      };
+    }
   </script>
 </body>
 </html>
