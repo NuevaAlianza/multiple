@@ -59,6 +59,27 @@
     .opciones {
       margin-top: 1rem;
     }
+    .opcion {
+      background: #f4f4f4;
+      border: 2px solid #ddd;
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 8px;
+      width: 100%;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .opcion:hover {
+      background-color: #e0e0e0;
+    }
+    .correcta {
+      background-color: green !important;
+      color: white !important;
+    }
+    .incorrecta {
+      background-color: red !important;
+      color: white !important;
+    }
   </style>
 </head>
 <body>
@@ -83,10 +104,10 @@
   
   <!-- Opciones de respuesta -->
   <div class="opciones oculta" id="opciones">
-    <button id="opcionA" class="respuestaIncorrecta"></button>
-    <button id="opcionB" class="respuestaIncorrecta"></button>
-    <button id="opcionC" class="respuestaIncorrecta"></button>
-    <button id="opcionD" class="respuestaIncorrecta"></button>
+    <button id="opcionA" class="opcion"></button>
+    <button id="opcionB" class="opcion"></button>
+    <button id="opcionC" class="opcion"></button>
+    <button id="opcionD" class="opcion"></button>
   </div>
 
   <audio id="audioStart" src="start.mp3" preload="auto"></audio>
@@ -99,6 +120,7 @@
     let preguntasSeleccionadas = [];
     let preguntaActual = 0;
     let timer, tiempo = 58;
+    let respuestaCorrectaGlobal = "";
 
     // Cargar datos CSV
     fetch(CSV_URL)
@@ -167,6 +189,9 @@
       document.getElementById("opcionC").innerText = opciones[2];
       document.getElementById("opcionD").innerText = opciones[3];
 
+      // Guardar la respuesta correcta globalmente
+      respuestaCorrectaGlobal = respuestaCorrecta;
+
       document.getElementById("contadorPreguntas").innerText = `Preguntas restantes: ${preguntasSeleccionadas.length - preguntaActual - 1}`;
       iniciarBarra(respuestaCorrecta);
       preguntaActual++;
@@ -218,6 +243,37 @@
         const audioEnd = document.getElementById("audioEnd");
         audioEnd.play();
       };
+    }
+
+    // Agregar eventos de click para las opciones
+    document.getElementById("opcionA").addEventListener("click", function() {
+      verificarRespuesta(this);
+    });
+    document.getElementById("opcionB").addEventListener("click", function() {
+      verificarRespuesta(this);
+    });
+    document.getElementById("opcionC").addEventListener("click", function() {
+      verificarRespuesta(this);
+    });
+    document.getElementById("opcionD").addEventListener("click", function() {
+      verificarRespuesta(this);
+    });
+
+    function verificarRespuesta(opcion) {
+      const opciones = document.querySelectorAll(".opcion");
+      // Primero, limpiar los colores previos
+      opciones.forEach(o => o.classList.remove("correcta", "incorrecta"));
+      
+      if (opcion.innerText === respuestaCorrectaGlobal) {
+        opcion.classList.add("correcta");
+      } else {
+        opcion.classList.add("incorrecta");
+        // Resaltar la respuesta correcta en verde
+        Array.from(opciones).find(o => o.innerText === respuestaCorrectaGlobal).classList.add("correcta");
+      }
+
+      // Deshabilitar las opciones después de hacer clic
+      opciones.forEach(o => o.disabled = true);
     }
   </script>
 </body>
