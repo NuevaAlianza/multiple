@@ -27,6 +27,7 @@
       background: green;
       transition: width 1s linear;
       margin-top: 1rem;
+      border-radius: 10px;
     }
     .pregunta, .respuesta {
       background: white;
@@ -50,6 +51,10 @@
     .respuestaIncorrecta {
       color: red;
       font-weight: bold;
+    }
+    .botones {
+      display: flex;
+      justify-content: space-between;
     }
   </style>
 </head>
@@ -76,7 +81,6 @@
   <audio id="audioStart" src="start.mp3" preload="auto"></audio>
   <audio id="audioWarning" src="warning.mp3" preload="auto"></audio>
   <audio id="audioEnd" src="end.mp3" preload="auto"></audio>
-  <audio id="audioBackground" src="background.mp3" preload="auto" loop></audio>
 
   <script>
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTdFQb05RiZ5CPUh8brf-HWARLiMs-UaQFdXRj8iZmonLnKJr_R6Mlzy8FDnGkKc1rZC2SS5LvHx4aa/pub?output=csv";
@@ -154,34 +158,31 @@
       barra.classList.remove("oculto");
       barra.style.width = "100%";
       barra.style.background = "green";
+      barra.style.transition = "width 1s linear";  // Mejora de la transición
       document.getElementById("verRespuesta").disabled = false;
 
       // Reproducir el sonido de fondo (expectativa)
-      const audioBackground = document.getElementById("audioBackground");
-      audioBackground.currentTime = 0;
-      audioBackground.volume = 1;
-      audioBackground.play();
-
-      // Reproducir el sonido de inicio
       const audioStart = document.getElementById("audioStart");
       audioStart.currentTime = 0;
       audioStart.play();
-      audioBackground.volume = 0.2;
-      setTimeout(() => audioBackground.volume = 1, 1500);
 
       timer = setInterval(() => {
         segundos--;
         barra.style.width = `${(segundos / tiempo) * 100}%`;
+
+        // Cambio de color según el tiempo
         if (segundos <= 20) barra.style.background = "orange";
         if (segundos <= 10) barra.style.background = "red";
+
         if (segundos <= 0) {
           clearInterval(timer);
           barra.classList.add("oculto");
           document.getElementById("respuesta").innerText = respuestaCorrecta;
           document.getElementById("respuesta").classList.remove("oculto");
           document.getElementById("verRespuesta").classList.add("oculto");
-          audioBackground.pause();
-          document.getElementById("respuesta").classList.add("respuestaCorrecta");
+
+          const audioEnd = document.getElementById("audioEnd");
+          audioEnd.play();
         }
       }, 1000);
 
@@ -192,8 +193,9 @@
         document.getElementById("respuesta").innerText = respuestaCorrecta;
         document.getElementById("respuesta").classList.remove("oculto");
         document.getElementById("verRespuesta").classList.add("oculto");
-        audioBackground.pause();
-        document.getElementById("respuesta").classList.add("respuestaCorrecta");
+
+        const audioEnd = document.getElementById("audioEnd");
+        audioEnd.play();
       };
     }
   </script>
