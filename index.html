@@ -2,212 +2,150 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Preguntas de Opción Múltiple</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f4f4f9;
-      color: #333;
+      background: #f4f4f8;
+      color: #222;
+      padding: 1rem;
       max-width: 700px;
       margin: auto;
-      padding: 1rem;
     }
     h1 {
       text-align: center;
-      margin-bottom: 1rem;
     }
-    select, button {
-      padding: 0.6rem;
-      font-size: 1rem;
-      width: 100%;
-      margin-bottom: 1rem;
+    .pregunta {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-top: 1.5rem;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-    .barra {
-      height: 20px;
-      background: green;
-      transition: width 1s linear;
-      margin-top: 1rem;
-    }
-    .pregunta-box, .respuesta-box {
-      background: white;
-      padding: 1rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      margin-top: 1rem;
-    }
-    .opciones button {
+    .opcion {
       display: block;
-      width: 100%;
-      margin-top: 0.5rem;
-      padding: 0.5rem;
-      font-size: 1rem;
-      border: none;
-      border-radius: 5px;
+      margin: 0.5rem 0;
+      padding: 0.75rem;
+      border-radius: 8px;
+      border: 1px solid #ccc;
       cursor: pointer;
+      background: #fafafa;
+      transition: background 0.3s;
+    }
+    .opcion:hover {
+      background: #e6f7ff;
     }
     .correcta {
-      background: #d4edda !important;
-      color: #155724;
+      background-color: #d4edda !important;
+      border-color: #28a745 !important;
     }
     .incorrecta {
-      background: #f8d7da !important;
-      color: #721c24;
+      background-color: #f8d7da !important;
+      border-color: #dc3545 !important;
     }
     .oculto {
       display: none;
     }
-    #siguiente {
+    button {
+      margin-top: 1rem;
+      padding: 0.75rem 1.25rem;
+      font-size: 1rem;
       background: #007bff;
-      color: white;
-      font-weight: bold;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
     }
-    #siguiente.blink {
-      animation: blink 1s step-end infinite;
-      background: green;
-    }
-    @keyframes blink {
-      50% { opacity: 0.5; }
-    }
-    #contadorPreguntas {
-      text-align: center;
-      font-weight: bold;
+    button:disabled {
+      background: #ccc;
     }
   </style>
 </head>
 <body>
-  <h1>Preguntas de opción múltiple</h1>
-  <label for="temas">Selecciona hasta 3 temas:</label>
-  <select id="temas" multiple size="5"></select>
-  <button id="cargar">Cargar preguntas</button>
-  <button id="siguiente" disabled>Ver siguiente pregunta</button>
-  <p id="contadorPreguntas"></p>
-
-  <div id="preguntaBox" class="pregunta-box oculto">
-    <h3 id="textoPregunta"></h3>
-    <div id="opciones" class="opciones"></div>
+  <h1>Trivia Bíblica</h1>
+  <div>
+    <label for="temas">Selecciona un tema:</label>
+    <select id="temas"></select>
+    <button id="cargar">Cargar preguntas</button>
   </div>
-  <div class="barra oculto" id="barra"></div>
 
-  <!-- Audios -->
-  <audio id="audioStart" src="start.mp3" preload="auto"></audio>
-  <audio id="audioWarning" src="warning.mp3" preload="auto"></audio>
-  <audio id="audioEnd" src="end.mp3" preload="auto"></audio>
-  <audio id="audioBackground" src="background.mp3" preload="auto" loop></audio>
+  <div id="contenido" class="oculto">
+    <div id="pregunta" class="pregunta"></div>
+    <div id="opciones"></div>
+    <button id="siguiente" disabled>Siguiente pregunta</button>
+  </div>
 
   <script>
-    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTpxk0WWt9G6gKkKAh1NxxUL2KEwBqNnPhJZoOnW4yOWTxgfj_EDe0J3NR9OM9LwffN_GUq6MK37yRg/pub?output=csv";
-    const tiempo = 58;
-    let datos = [], preguntas = [], actual = 0, timer;
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTd4xuQkipHXpfuxm5Zk3nxCdIdpRUxAQcfyQuk2BLPHzNVXgEe-CX6PR4D_ueCWFvcGDSrGvTrlyRt/pub?output=csv";
+
+    let preguntas = [], actuales = [], indice = 0;
 
     fetch(CSV_URL)
       .then(res => res.text())
       .then(text => {
-        const filas = text.trim().split('\n').map(f => f.split(','));
-        datos = filas.filter(f => f.length >= 6);
-        const temas = [...new Set(datos.map(f => f[2].trim()))];
-        const sel = document.getElementById("temas");
-        temas.forEach(t => {
+        const filas = text.trim().split("\n").map(f => f.split(","));
+        preguntas = filas.slice(1).map(f => ({
+          pregunta: f[0],
+          correcta: f[1],
+          incorrectas: [f[2], f[3], f[4]],
+          tema: f[5]
+        }));
+
+        const temasUnicos = [...new Set(preguntas.map(p => p.tema))];
+        const select = document.getElementById("temas");
+        temasUnicos.forEach(t => {
           const opt = document.createElement("option");
           opt.value = t;
-          opt.textContent = t;
-          sel.appendChild(opt);
+          opt.innerText = t;
+          select.appendChild(opt);
         });
       });
 
-    document.getElementById("cargar").addEventListener("click", () => {
-      const sel = Array.from(document.getElementById("temas").selectedOptions).map(o => o.value);
-      if (sel.length === 0 || sel.length > 3) {
-        alert("Selecciona entre 1 y 3 temas.");
-        return;
-      }
-      preguntas = [];
-      sel.forEach(t => {
-        const delTema = datos.filter(f => f[2].trim() === t);
-        preguntas.push(...delTema.sort(() => 0.5 - Math.random()).slice(0, 15));
-      });
-      preguntas = preguntas.sort(() => 0.5 - Math.random());
-      actual = 0;
-      document.getElementById("siguiente").disabled = false;
-      mostrarPregunta();
-    });
+    document.getElementById("cargar").onclick = () => {
+      const tema = document.getElementById("temas").value;
+      if (!tema) return alert("Selecciona un tema");
 
-    document.getElementById("siguiente").addEventListener("click", mostrarPregunta);
+      actuales = preguntas.filter(p => p.tema === tema).sort(() => 0.5 - Math.random()).slice(0, 15);
+      indice = 0;
+      document.getElementById("contenido").classList.remove("oculto");
+      mostrarPregunta();
+    };
 
     function mostrarPregunta() {
-      if (actual >= preguntas.length) {
-        alert("Fin del cuestionario.");
-        return;
-      }
-      const [texto, correcta, , i1, i2, i3] = preguntas[actual];
-      const opciones = [correcta, i1, i2, i3].sort(() => 0.5 - Math.random());
-      const contenedor = document.getElementById("opciones");
+      document.getElementById("siguiente").disabled = true;
+      const p = actuales[indice];
+      document.getElementById("pregunta").innerText = `${indice + 1}. ${p.pregunta}`;
 
-      document.getElementById("textoPregunta").textContent = texto;
+      const opciones = [p.correcta, ...p.incorrectas].sort(() => 0.5 - Math.random());
+      const contenedor = document.getElementById("opciones");
       contenedor.innerHTML = "";
+
       opciones.forEach(op => {
         const btn = document.createElement("button");
-        btn.textContent = op;
-        btn.onclick = () => seleccionar(btn, correcta);
+        btn.className = "opcion";
+        btn.innerText = op;
+        btn.onclick = () => {
+          document.querySelectorAll(".opcion").forEach(b => {
+            b.disabled = true;
+            if (b.innerText === p.correcta) b.classList.add("correcta");
+            else if (b.innerText === op && op !== p.correcta) b.classList.add("incorrecta");
+          });
+          document.getElementById("siguiente").disabled = false;
+        };
         contenedor.appendChild(btn);
       });
-
-      document.getElementById("preguntaBox").classList.remove("oculto");
-      document.getElementById("contadorPreguntas").textContent = `Preguntas restantes: ${preguntas.length - actual - 1}`;
-      document.getElementById("siguiente").classList.remove("blink");
-      iniciarBarra(correcta);
-      actual++;
     }
 
-    function seleccionar(btn, correcta) {
-      detenerTiempo();
-      const botones = document.querySelectorAll("#opciones button");
-      botones.forEach(b => {
-        b.disabled = true;
-        if (b.textContent === correcta) b.classList.add("correcta");
-        else if (b === btn) b.classList.add("incorrecta");
-      });
-      document.getElementById("siguiente").classList.add("blink");
-    }
-
-    function iniciarBarra(correcta) {
-      let segundos = tiempo;
-      const barra = document.getElementById("barra");
-      barra.classList.remove("oculto");
-      barra.style.width = "100%";
-      barra.style.background = "green";
-
-      const audioBg = document.getElementById("audioBackground");
-      audioBg.currentTime = 0;
-      audioBg.volume = 1;
-      audioBg.play();
-
-      document.getElementById("audioStart").play();
-      timer = setInterval(() => {
-        segundos--;
-        barra.style.width = `${(segundos / tiempo) * 100}%`;
-        if (segundos === 10) document.getElementById("audioWarning").play();
-        if (segundos <= 20) barra.style.background = "orange";
-        if (segundos <= 10) barra.style.background = "red";
-        if (segundos <= 0) {
-          detenerTiempo();
-          const botones = document.querySelectorAll("#opciones button");
-          botones.forEach(b => {
-            b.disabled = true;
-            if (b.textContent === correcta) b.classList.add("correcta");
-          });
-          document.getElementById("audioEnd").play();
-          document.getElementById("siguiente").classList.add("blink");
-        }
-      }, 1000);
-    }
-
-    function detenerTiempo() {
-      clearInterval(timer);
-      document.getElementById("barra").classList.add("oculto");
-      document.getElementById("audioBackground").pause();
-    }
+    document.getElementById("siguiente").onclick = () => {
+      indice++;
+      if (indice >= actuales.length) {
+        alert("¡Has terminado el cuestionario!");
+        document.getElementById("contenido").classList.add("oculto");
+      } else {
+        mostrarPregunta();
+      }
+    };
   </script>
 </body>
 </html>
-
